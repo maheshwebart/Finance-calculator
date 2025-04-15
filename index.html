@@ -4,68 +4,89 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SIP Goal Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       padding: 2rem;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
+      background-color: #f3f4f6;
+    }
+    h1 {
+      text-align: center;
+      color: #111827;
+    }
+    .card {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     label {
       display: block;
-      margin-top: 1.2rem;
+      margin-top: 1rem;
+      font-weight: 600;
     }
-    input[type='range'] {
+    input[type='range'], input[type='number'] {
       width: 100%;
+      margin-top: 0.5rem;
     }
-    .value-label {
+    .value {
       font-size: 0.9rem;
-      margin-bottom: 0.3rem;
-      color: #333;
+      color: #374151;
+      margin-top: 0.2rem;
     }
     button {
-      margin-top: 1.5rem;
-      padding: 0.75rem 1.5rem;
-      background-color: #10b981;
+      margin-top: 2rem;
+      padding: 0.75rem;
+      background-color: #3b82f6;
       color: white;
       font-size: 1rem;
       border: none;
+      border-radius: 0.5rem;
       cursor: pointer;
     }
     .result {
       margin-top: 2rem;
-      font-size: 1.2rem;
-      color: #047857;
+      font-size: 1.1rem;
+      color: #065f46;
       font-weight: bold;
+      text-align: center;
+    }
+    canvas {
+      margin-top: 2rem;
     }
   </style>
 </head>
 <body>
   <h1>SIP Goal Calculator</h1>
+  <div class="card">
+    <label>Goal (Today's Value in ₹)
+      <input type="number" id="goalToday" value="10000000" />
+    </label>
 
-  <label>Goal (Today's Value in ₹)
-    <input type="number" id="goalToday" value="10000000" />
-  </label>
+    <label>Expected Inflation: <span id="inflationValue">6%</span>
+      <input type="range" id="inflation" min="1" max="10" value="6" oninput="updateLabel('inflation')" />
+    </label>
 
-  <label>Expected Inflation Rate: <span id="inflationValue">6%</span>
-    <input type="range" id="inflation" min="1" max="10" value="6" oninput="updateLabel('inflation')" />
-  </label>
+    <label>Investment Duration: <span id="yearsValue">15 years</span>
+      <input type="range" id="years" min="1" max="30" value="15" oninput="updateLabel('years')" />
+    </label>
 
-  <label>Investment Duration: <span id="yearsValue">15 years</span>
-    <input type="range" id="years" min="1" max="30" value="15" oninput="updateLabel('years')" />
-  </label>
+    <label>Expected Return Rate: <span id="rateValue">12%</span>
+      <input type="range" id="rate" min="1" max="20" value="12" oninput="updateLabel('rate')" />
+    </label>
 
-  <label>Expected Annual Return: <span id="rateValue">12%</span>
-    <input type="range" id="rate" min="1" max="20" value="12" oninput="updateLabel('rate')" />
-  </label>
+    <label>Annual Step-Up Rate: <span id="stepUpValue">10%</span>
+      <input type="range" id="stepUp" min="0" max="20" value="10" oninput="updateLabel('stepUp')" />
+    </label>
 
-  <label>Annual Step-up Rate: <span id="stepUpValue">10%</span>
-    <input type="range" id="stepUp" min="0" max="20" value="10" oninput="updateLabel('stepUp')" />
-  </label>
+    <button onclick="calculateSIP()">Calculate SIP</button>
 
-  <button onclick="calculateSIP()">Calculate SIP</button>
-
-  <div class="result" id="result"></div>
+    <div class="result" id="result"></div>
+    <canvas id="growthChart" height="200"></canvas>
+  </div>
 
   <script>
     function updateLabel(id) {
@@ -73,6 +94,8 @@
       document.getElementById(id + 'Value').innerText =
         id === 'years' ? `${value} years` : `${value}%`;
     }
+
+    let chart;
 
     function calculateSIP() {
       const goalToday = parseFloat(document.getElementById('goalToday').value);
@@ -101,9 +124,54 @@
       document.getElementById('result').innerText =
         `To reach an inflation-adjusted goal of ₹${Math.round(inflatedGoal).toLocaleString()},\n` +
         `you need to start saving ₹${monthly.toLocaleString()} per month.`;
+
+      // Prepare chart data
+      const labels = [];
+      const data = [];
+      let totalGrowth = 0;
+      let m = monthly;
+
+      for (let y = 1; y <= years; y++) {
+        for (let i = 0; i < 12; i++) {
+          totalGrowth = totalGrowth * (1 + r) + m;
+        }
+        labels.push(`Year ${y}`);
+        data.push(Math.round(totalGrowth));
+        m *= 1 + stepUp / 100;
+      }
+
+      // Destroy old chart if exists
+      if (chart) chart.destroy();
+
+      const ctx = document.getElementById('growthChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Investment Value Over Time',
+            data,
+            fill: true,
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: '#3b82f6',
+            tension: 0.3,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              ticks: {
+                callback: (val) => '₹' + val.toLocaleString()
+              }
+            }
+          }
+        }
+      });
     }
 
-    // Initial label sync
+    // Initial setup
     ['inflation', 'years', 'rate', 'stepUp'].forEach(updateLabel);
   </script>
 </body>
