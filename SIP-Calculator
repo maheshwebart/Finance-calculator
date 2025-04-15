@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SIP Goal Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.75rem 1.5rem;
+      background-color: #10b981;
+      color: white;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+      color: #047857;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>SIP Goal Calculator</h1>
+
+  <label>Goal (Today's Value in ₹)
+    <input type="number" id="goalToday" value="10000000" />
+  </label>
+
+  <label>Expected Inflation Rate (%)
+    <input type="number" id="inflation" value="6" />
+  </label>
+
+  <label>Investment Duration (Years)
+    <input type="number" id="years" value="15" />
+  </label>
+
+  <label>Expected Annual Return (%)
+    <input type="number" id="rate" value="12" />
+  </label>
+
+  <label>Annual Step-up Rate (%)
+    <input type="number" id="stepUp" value="10" />
+  </label>
+
+  <button onclick="calculateSIP()">Calculate SIP</button>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    function calculateSIP() {
+      const goalToday = parseFloat(document.getElementById('goalToday').value);
+      const inflation = parseFloat(document.getElementById('inflation').value);
+      const years = parseInt(document.getElementById('years').value);
+      const rate = parseFloat(document.getElementById('rate').value);
+      const stepUp = parseFloat(document.getElementById('stepUp').value);
+
+      const inflatedGoal = goalToday * Math.pow(1 + inflation / 100, years);
+      let monthly = 1000;
+      let total = 0;
+      const r = rate / 100 / 12;
+
+      while (total < inflatedGoal) {
+        total = 0;
+        let m = monthly;
+        for (let y = 1; y <= years; y++) {
+          for (let i = 0; i < 12; i++) {
+            total = total * (1 + r) + m;
+          }
+          m *= 1 + stepUp / 100;
+        }
+        if (total < inflatedGoal) monthly += 100;
+      }
+
+      document.getElementById('result').innerText =
+        `To reach an inflation-adjusted goal of ₹${inflatedGoal.toFixed(0).toLocaleString()},\n` +
+        `you need to start saving ₹${monthly.toLocaleString()} per month.`;
+    }
+  </script>
+</body>
+</html>
