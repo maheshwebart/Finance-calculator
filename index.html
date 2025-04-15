@@ -13,12 +13,15 @@
     }
     label {
       display: block;
-      margin-top: 1rem;
+      margin-top: 1.2rem;
     }
-    input {
+    input[type='range'] {
       width: 100%;
-      padding: 0.5rem;
-      font-size: 1rem;
+    }
+    .value-label {
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+      color: #333;
     }
     button {
       margin-top: 1.5rem;
@@ -44,20 +47,20 @@
     <input type="number" id="goalToday" value="10000000" />
   </label>
 
-  <label>Expected Inflation Rate (%)
-    <input type="number" id="inflation" value="6" />
+  <label>Expected Inflation Rate: <span id="inflationValue">6%</span>
+    <input type="range" id="inflation" min="1" max="10" value="6" oninput="updateLabel('inflation')" />
   </label>
 
-  <label>Investment Duration (Years)
-    <input type="number" id="years" value="15" />
+  <label>Investment Duration: <span id="yearsValue">15 years</span>
+    <input type="range" id="years" min="1" max="30" value="15" oninput="updateLabel('years')" />
   </label>
 
-  <label>Expected Annual Return (%)
-    <input type="number" id="rate" value="12" />
+  <label>Expected Annual Return: <span id="rateValue">12%</span>
+    <input type="range" id="rate" min="1" max="20" value="12" oninput="updateLabel('rate')" />
   </label>
 
-  <label>Annual Step-up Rate (%)
-    <input type="number" id="stepUp" value="10" />
+  <label>Annual Step-up Rate: <span id="stepUpValue">10%</span>
+    <input type="range" id="stepUp" min="0" max="20" value="10" oninput="updateLabel('stepUp')" />
   </label>
 
   <button onclick="calculateSIP()">Calculate SIP</button>
@@ -65,6 +68,12 @@
   <div class="result" id="result"></div>
 
   <script>
+    function updateLabel(id) {
+      const value = document.getElementById(id).value;
+      document.getElementById(id + 'Value').innerText =
+        id === 'years' ? `${value} years` : `${value}%`;
+    }
+
     function calculateSIP() {
       const goalToday = parseFloat(document.getElementById('goalToday').value);
       const inflation = parseFloat(document.getElementById('inflation').value);
@@ -90,9 +99,12 @@
       }
 
       document.getElementById('result').innerText =
-        `To reach an inflation-adjusted goal of ₹${inflatedGoal.toFixed(0).toLocaleString()},\n` +
+        `To reach an inflation-adjusted goal of ₹${Math.round(inflatedGoal).toLocaleString()},\n` +
         `you need to start saving ₹${monthly.toLocaleString()} per month.`;
     }
+
+    // Initial label sync
+    ['inflation', 'years', 'rate', 'stepUp'].forEach(updateLabel);
   </script>
 </body>
 </html>
